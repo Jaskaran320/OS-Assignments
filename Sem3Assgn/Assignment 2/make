@@ -1,0 +1,7 @@
+all:
+	gcc -g -o a2q1 a2q1.c
+	gcc -g -o a2q2a a2q2a.c
+	gcc -g -o a2q2b a2q2b.c
+	gcc -g -o a2q2c a2q2c.c
+	gcc -g -o a2q3 a2q3.c
+	gcc -g -o a2q4 a2q4.c

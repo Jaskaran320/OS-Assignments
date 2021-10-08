@@ -1,0 +1,4 @@
+all:
+	gcc -g -o a3q3a a3q3a.c
+	gcc -g -o a3q3b a3q3b.c
+	gcc -g -o a3q4 a34.c
