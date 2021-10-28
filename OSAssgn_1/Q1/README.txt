@@ -10,6 +10,13 @@ make link --> generate executable files and execute them
 
 make clean --> delete all intermediary and executable files.
 
+open syscall --> open file, O_RDONLY opens it in readonly mode. Assigns value of file descriptor to int.
+read syscall --> read file, takes input of file descriptor, buffer to store data and length of buffer.
+write syscall --> write into file, takes input of file descriptor, string to be written and length of string.
+
+Errors are handled by perror function. errno displays error number. It throws error if file is opened incorrectly or it is not in the
+same directory.
+
 Explanation for file 1a
 
 data() is called in the start which opens student_record.csv
@@ -36,7 +43,3 @@ And then the averages of the students who are in section B are printed into writ
 Then assign_avg() is called which calculates average for each assignment.
 This data is then printed into written_records2.txt
 END
-
-open syscall --> open file, O_RDONLY opens it in readonly mode. Assigns value of file descriptor to int.
-read syscall --> read file, takes input of file descriptor, buffer to store data and length of buffer.
-write syscall --> write into file, takes input 
