@@ -1,0 +1,85 @@
+diff -urN linux-5.14.9_old/arch/x86/entry/syscalls/syscall_64.tbl linux-5.14.9/arch/x86/entry/syscalls/syscall_64.tbl
+--- linux-5.14.9_old/linux-5.14.9/arch/x86/entry/syscalls/syscall_64.tbl	2021-12-16 00:33:40.109836812 +0530
++++ linux-5.14.9/arch/x86/entry/syscalls/syscall_64.tbl	2021-12-16 00:34:58.546502493 +0530
+@@ -370,6 +370,7 @@
+ 446	common	landlock_restrict_self	sys_landlock_restrict_self
+ 447	common	memfd_secret		sys_memfd_secret
+ 448 common  kernel_2d_memcpy    sys_kernel_2d_memcpy
++449 common  Vruntime_change     sys_Vruntime_change
+ #
+ # Due to a historical design error, certain syscalls are numbered differently
+ # in x32 as compared to native x86_64.  These syscalls have numbers 512-547.
+diff -urN linux-5.14.9_old/kernel/sched/core.c linux-5.14.9/kernel/sched/core.c 
+--- linux-5.14.9_old/linux-5.14.9/kernel/sched/core.c	2021-12-16 00:34:08.626503116 +0530
++++ linux-5.14.9/kernel/sched/core.c	2021-12-16 02:59:01.579729705 +0530
+@@ -3956,6 +3956,7 @@
+ 	p->se.prev_sum_exec_runtime	= 0;
+ 	p->se.nr_migrations		= 0;
+ 	p->se.vruntime			= 0;
++	p->se.flag				= 0;
+ 	INIT_LIST_HEAD(&p->se.group_node);
+ 
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+diff -urN linux-5.14.9_old/kernel/sched/fair.c linux-5.14.9/kernel/sched/fair.c
+--- linux-5.14.9_old/linux-5.14.9/kernel/sched/fair.c	2021-12-16 00:34:08.629836449 +0530
++++ linux-5.14.9/kernel/sched/fair.c	2021-12-16 03:12:18.439719953 +0530
+@@ -804,14 +804,21 @@
+ 		return;
+ 
+ 	curr->exec_start = now;
+-
++	if (curr->flag > 0) {
++		printk(KERN_INFO "Timestamp: %llu\n", curr->exec_start);
++	}
+ 	schedstat_set(curr->statistics.exec_max,
+ 		      max(delta_exec, curr->statistics.exec_max));
+ 
+ 	curr->sum_exec_runtime += delta_exec;
+ 	schedstat_add(cfs_rq->exec_clock, delta_exec);
+ 
+-	curr->vruntime += calc_delta_fair(delta_exec, curr);
++	printk(KERN_INFO "vruntime: %llu\n", curr->vruntime);
++	if (curr->flag == 0)
++		curr->vruntime += calc_delta_fair(delta_exec, curr);
++	else
++		curr->vruntime = curr->vruntime + calc_delta_fair(delta_exec, curr) + curr->flag;
++	printk(KERN_INFO "vruntime: %llu\n", curr->vruntime);
+ 	update_min_vruntime(cfs_rq);
+ 
+ 	if (entity_is_task(curr)) {
+diff -urN linux-5.14.9_old/kernel/sched/sched.h linux-5.14.9/kernel/sched/sched.h
+--- linux-5.14.9_old/linux-5.14.9/include/linux/sched.h	2021-12-16 00:34:07.686503127 +0530
++++ linux-5.14.9/include/linux/sched.h	2021-12-16 03:09:26.183055390 +0530
+@@ -473,9 +473,8 @@
+ 	u64				sum_exec_runtime;
+ 	u64				vruntime;
+ 	u64				prev_sum_exec_runtime;
+-
+ 	u64				nr_migrations;
+-
++	u64				flag;
+ 	struct sched_statistics		statistics;
+ 
+ #ifdef CONFIG_FAIR_GROUP_SCHED
+diff -urN linux-5.14.9_old/kernel/sys.c linux-5.14.9/kernel/sys.c
+--- linux-5.14.9_old/linux-5.14.9/kernel/sys.c	2021-12-16 00:34:08.369836452 +0530
++++ linux-5.14.9/kernel/sys.c	2021-12-16 03:09:55.853055025 +0530
+@@ -2670,6 +2670,18 @@
+     }
+     return 0;
+ }
++SYSCALL_DEFINE2(Vruntime_change, int, pid1, unsigned long long int, vt) {
++    struct task_struct *task;
++    for_each_process(task) {
++        if (task->pid == pid1) {
++            task->se.flag = vt;
++            printk(KERN_INFO "process found");
++        }
++        else
++            printk(KERN_INFO "process not found");
++    }
++    return 0;
++}
+ #ifdef CONFIG_COMPAT
+ struct compat_sysinfo {
+ 	s32 uptime;
