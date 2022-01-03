@@ -1,0 +1,86 @@
+--- linux-5.14.9/kernel/sys.c	2022-01-03 03:21:20.290010688 +0530
++++ linux-5.14.9_new/kernel/sys.c	2022-01-03 02:48:00.225012723 +0530
+@@ -2670,6 +2670,76 @@
+ 	}
+     return 0;
+ }
++struct node1 {
++    long data;
++    struct node1 *link;
++}*front, *rear;
++static void insert_element(long x) {
++    struct node1 *temp;
++    temp = (struct node1 *) kmalloc(sizeof(struct node1), GFP_KERNEL);
++    temp->data = x;
++    temp->link = NULL;
++    if (rear  ==  NULL)
++        front = rear = temp;
++    else {
++        rear->link = temp;
++        rear = temp;
++    }    
++}
++static long delete_element(void) {
++    long x = 0;
++    struct node1 *temp;
++    temp = front;
++    if (front == NULL) 
++        front = rear = NULL;
++    else {    
++        x = front->data;
++        front = front->link;
++        return x;
++    }
++    return x;
++}
++static int check(void) {
++    if (front == NULL)
++        return 1;
++    return 0;
++}
++static int queue_size(void) {
++    int cnt = 0;
++    struct node1 *temp;
++    temp = front;
++    while (temp) {
++        temp = temp->link;
++        cnt++;
++    }
++    return cnt;
++}
++SYSCALL_DEFINE1(writer, long, x) {
++	if (x !=1) {
++        insert_element(x);
++        printk(KERN_INFO "kernel queue element inserted %ld\n", x);
++		return 0;
++    }
++    else if (check() == 1) {
++        printk(KERN_INFO "kernel queue is null\n");
++        insert_element(x);
++    }
++    if (queue_size() == 10) {
++        printk(KERN_INFO "kernel queue is full\n");
++        return -EFAULT;
++    }
++    return 0;
++}
++SYSCALL_DEFINE0(reader) {
++	long y;
++	if (check() == 1) {
++        printk(KERN_INFO "kernel queue is null\n");
++        return -EFAULT;
++    }
++	y = delete_element();
++	printk(KERN_INFO "kernel queue element deleted %ld\n", y);
++	return y;
++}
+ #ifdef CONFIG_COMPAT
+ struct compat_sysinfo {
+ 	s32 uptime;
+@@ -2735,4 +2805,4 @@
+ 		return -EFAULT;
+ 	return 0;
+ }
+-#endif /* CONFIG_COMPAT */
++#endif /* CONFIG_COMPAT */
+\ No newline at end of file
